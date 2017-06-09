@@ -4,14 +4,12 @@ import Import
 import File
 import Config
 
+import Widget.Layout
 import Widget.Splits
 import Widget.Times
-import Widget.Total
-import Widget.Percentile
 
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Control.Monad.IO.Class (liftIO)
-import Data.Time.Clock
 import Data.Yaml
 
 
@@ -26,98 +24,64 @@ main = do
 
 
 doCurses :: Config -> IO ()
-doCurses (Config levels) = runCurses $ do
+doCurses config@(Config levels) = runCurses $ do
   -- NCurses setup
   setEcho False
-  setCursorMode CursorInvisible
+  _ <- setCursorMode CursorInvisible
 
   -- Time setup
   startTime <- liftIO getCurrentTime
 
   -- Window setup
-  ss <- screenSizes
-
   let levelNames = map name levels
-      levelTimes = map time levels
-      cumulativeTimes = map cumu levels
 
   -- Load previous data
   file <- liftIO $ load levelNames
 
-  splits      <- mkSplits levelNames <$> defaultWindow
-  percentiles <- mkPercentile levelTimes <$> newWindow (splitsRows ss) (percentilesColumns ss) 0 (splitsColumns ss)
-  times <- mkTimes file <$> newWindow (splitsRows ss) (timesColumns ss) 0 (splitsColumns ss + percentilesColumns ss)
-  total <- mkTotal file cumulativeTimes <$> newWindow (totalsRows ss) (columns ss) (splitsRows ss) 0
+  -- Build the layout (which also "instantiates" all the widgets
+  layout <- mkLayout config file
 
-  resize splits (splitsRows ss) (splitsColumns ss)
+  -- Start the save/reset wrapper around the main loop
+  loop file layout startTime
 
-  loop file cumulativeTimes splits percentiles times total startTime
-
-  where loop file cumulativeTimes splits percentiles times total startTime = do
-          redraw splits
-          redraw percentiles
-          redraw times
-          redraw total
+  where loop file l startTime = do
+          redraw l
 
           render
 
-          (newFile, newSplits, newPercentiles, newTimes, newTotal, continue) <-
-            mainLoop file splits percentiles times total startTime (Paused True)
+          (newFile, l', continue) <- mainLoop file l startTime (Paused True)
 
-          if continue
-            then do
-              startTime <- liftIO getCurrentTime
-              loop newFile cumulativeTimes newSplits newPercentiles (mkTimes newFile $ window newTimes) (mkTotal newFile cumulativeTimes $ window newTotal) startTime
-            else
-              return ()
+          when continue $
+            liftIO getCurrentTime >>= loop newFile (resetLayout config newFile l')
 
 
-mainLoop :: FileFormat -> Splits -> Percentile -> Times -> Total -> UTCTime -> Paused -> Curses (FileFormat, Splits, Percentile, Times, Total, Bool)
-mainLoop file splits percentiles times total lastTime p = do
-  ev       <- getEvent (window splits) (Just 60)
+mainLoop :: FileFormat -> Layout -> UTCTime -> Paused -> Curses (FileFormat, Layout, Bool)
+mainLoop file l@(L splits _ times _) lastTime p = do
+  w        <- defaultWindow
+  ev       <- getEvent w (Just 60)
   thisTime <- liftIO getCurrentTime
 
   let deltaT = if paused p
                  then toEnum 0
                  else diffUTCTime thisTime lastTime
 
-  (nf, eventSplits, eventPercentiles, eventTimes, eventTotal, p', done, continue) <- handleEvents ev
+  (nf, eventL, p', done, continue) <- handleEvents ev
 
   if done
-    then return (nf, eventSplits, eventPercentiles, eventTimes, eventTotal, continue)
+    then return (nf, eventL, continue)
     else do
-      newSplits <- update deltaT eventSplits
-      newTimes  <- update deltaT eventTimes
-      newTotal  <- update deltaT eventTotal
-
-      newPercentile <- update (curs $ timesZipper newTimes) eventPercentiles
+      l' <- update deltaT eventL
 
       render
 
-      mainLoop nf newSplits newPercentile newTimes newTotal thisTime p'
+      mainLoop nf l' thisTime p'
 
-  where handleEvents Nothing   = return (file, splits, percentiles, times, total, p, False, True)
+  where handleEvents Nothing   = return (file, l, p, False, True)
         handleEvents (Just ev) = do
           action <-
             case ev of
               EventResized -> do
-                ss <- screenSizes
-
-                move   splits 0 0
-                resize splits (splitsRows ss) (splitsColumns ss)
-                redraw splits
-
-                move   percentiles 0 (splitsColumns ss)
-                resize percentiles (splitsRows ss) (percentilesColumns ss)
-                redraw percentiles
-
-                move   times 0 (splitsColumns ss + percentilesColumns ss)
-                resize times (splitsRows ss) (timesColumns ss)
-                redraw times
-
-                move   total (splitsRows ss) 0
-                resize total (totalsRows ss) (columns ss)
-                redraw total
+                arrangeLayout l
 
                 return Pass
 
@@ -134,12 +98,9 @@ mainLoop file splits percentiles times total lastTime p = do
                   else return Pause
 
               -- Advance the split from start to finish
-              EventCharacter ' ' ->
-                if paused p
-                  then return Start
-                  else if null $ right $ splitsZipper splits
-                         then return End
-                         else return Advance
+              EventCharacter ' ' | paused p                           -> return Start
+                                 | null $ right $ splitsZipper splits -> return End
+                                 | otherwise                          -> return Advance
 
               -- Return to the previous split
               EventSpecialKey KeyPreviousPage ->
@@ -164,19 +125,16 @@ mainLoop file splits percentiles times total lastTime p = do
                   then return Reset
                   else return Pass
 
-              otherwise -> return Pass
+              _ -> return Pass
 
-          (action', nf) <- 
+          (action', nf) <-
             case action of
               Save nf   -> liftIO $ save nf
                         >> return (Reset, nf)
               Reset     -> return (Reset, file)
-              otherwise -> return (action, file)
+              _         -> return (action, file)
 
-          newSplits      <- handle action' splits
-          newPercentiles <- handle action' percentiles
-          newTimes       <- handle action' times
-          newTotal       <- handle action' total
+          newLayout <- handle action' l
 
           let done = ev == EventCharacter 'q'
                   || ev == EventCharacter 'Q'
@@ -188,27 +146,7 @@ mainLoop file splits percentiles times total lastTime p = do
                      End   -> Paused True
                      _     -> p
 
-          return (nf, newSplits, newPercentiles, newTimes, newTotal, p', done, action' == Reset)
-
-
-data ScreenSizes = ScreenSizes { rows    :: Integer
-                               , columns :: Integer
-                               , splitsRows    :: Integer
-                               , splitsColumns :: Integer
-                               , timesColumns  :: Integer
-                               , totalsRows    :: Integer
-                               , percentilesColumns :: Integer}
-
-screenSizes = do
-  (rows, columns) <- screenSize
-
-  let timesColumns      = 10
-      totalsRows        = 4
-      percentileColumns = 5
-      splitsColumns     = columns - (timesColumns + percentileColumns)
-      splitsRows        = rows    - totalsRows
-
-  return $ ScreenSizes rows columns splitsRows splitsColumns timesColumns totalsRows percentileColumns
+          return (nf, newLayout, p', done, action' == Reset)
 
 
 waitFor :: (Event -> Bool) -> (Event -> Curses ()) -> Curses () -> Curses ()
@@ -217,5 +155,5 @@ waitFor p q r = loop where
         w <- defaultWindow
         ev <- getEvent w (Just 100)
         case ev of
-            Nothing -> r >> loop
-            Just ev' -> if p ev' then return () else q ev' >> r >> loop
+            Nothing  -> r >> loop
+            Just ev' -> unless (p ev') $ q ev' >> r >> loop
