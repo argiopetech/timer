@@ -24,20 +24,27 @@ mkPercentile p = Percentile (listToZipper p) (listToZipper [toEnum 0]) (listToZi
 
 
 updatePercentile :: NominalDiffTime -> Percentile -> Curses Percentile
-updatePercentile t (Percentile z ts v w) =
-  let p = Percentile z (replace t ts) v w
+updatePercentile d (Percentile z ts v w) =
+  let ts' = replace (curs ts + d) ts
+      p   = Percentile z ts' v w
   in redrawPercentile p >> return p
 
 
 handlePercentile :: TimerAction -> Percentile -> Curses Percentile
 handlePercentile Advance (Percentile z ts v w) =
-  return $ Percentile (next z) (push (toEnum 0) ts) (push True v) w
+  return $ Percentile (next z) (push 0 ts) (push True v) w
 
-handlePercentile Reverse (Percentile z ts v w) =
-  let v' = if (not $ curs $ prev $ prev v) && (not $ null $ left $ prev v)
-             then trunc $ prev v
-             else replace True $ trunc $ prev v
-  in return $ Percentile (prev z) (trunc $ prev ts) v' w
+handlePercentile Reverse p@(Percentile z ts v w) =
+  return $
+    if null $ left z
+      then p
+      else
+        let c   = curs ts
+            ts' = trunc $ prev ts
+            v'  = if (not $ curs $ prev $ prev v) && (not $ null $ left $ prev v)
+                    then trunc $ prev v
+                    else replace True $ trunc $ prev v
+        in Percentile (prev z) (replace (curs ts' + c) ts') v' w
 
 handlePercentile Skip    (Percentile z ts v w) =
   return $ Percentile (next z) (push (toEnum 0) ts) (push False $ replace False v) w
