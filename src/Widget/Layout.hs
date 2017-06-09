@@ -43,6 +43,7 @@ mkLayout (Config levels) file = do
   return layout
 
 
+updateLayout :: NominalDiffTime -> Layout -> Curses Layout
 updateLayout d (L s p ti to) =
   let f = update d
   in L <$> f s
@@ -51,6 +52,7 @@ updateLayout d (L s p ti to) =
        <*> f to
 
 
+handleLayout :: TimerAction -> Layout -> Curses Layout
 handleLayout ta (L s p ti to) =
   let f = handle ta
   in L <$> f s
@@ -59,6 +61,7 @@ handleLayout ta (L s p ti to) =
        <*> f to
 
 
+redrawLayout :: Layout -> Curses ()
 redrawLayout (L s p ti to) = do
   redraw s
   redraw p
@@ -70,6 +73,7 @@ newWindow' :: Curses Window
 newWindow' = newWindow 1 1 0 0
 
 
+arrangeLayout :: Layout -> Curses ()
 arrangeLayout (L splits percentiles times total) = do
   (rows, columns) <- screenSize
 
@@ -97,6 +101,7 @@ arrangeLayout (L splits percentiles times total) = do
   redraw total
 
 
+resetLayout :: Config -> FileFormat -> Layout -> Layout
 resetLayout (Config levels) file (L splits percentiles times total) =
   let cumulativeTimes = map cumu levels
   in L splits
