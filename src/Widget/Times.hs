@@ -46,16 +46,17 @@ handleTimes Advance (Times f p z v w) =
   in return t
 
 handleTimes Reverse t@(Times f p z v w) =
-  if null $ left z
-    then return t
-    else
-      let c = curs z
-          z' = trunc $ prev z
-          v' = if (not $ curs $ prev $ prev v) && (not $ null $ left $ prev v)
-                 then trunc $ prev v
-                 else replace True $ trunc $ prev v
-          t = Times f p (replace (curs z' + c) z') v' w
-      in return t
+  return $
+    if null $ left z
+      then t
+      else
+        let c = curs z
+            z' = trunc $ prev z
+            v' = if (not $ curs $ prev $ prev v) && (not $ null $ left $ prev v)
+                   then trunc $ prev v
+                   else replace True $ trunc $ prev v
+            t = Times f p (replace (curs z' + c) z') v' w
+        in t
 
 handleTimes Skip  (Times f p z v w) = return $ Times f p (push 0 z) (push False $ replace False v) w
 
