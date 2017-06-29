@@ -11,7 +11,7 @@ import Format.Percentile
 import Control.Monad (unless)
 import Text.Printf
 
-data Total = Total FileFormat (Zipper NormalParams) NominalDiffTime Window
+data Total = Total FileFormat (Zipper NormalParams) (Zipper NominalDiffTime) Window
 
 instance Widget Total where
   update                 = updateTotal
@@ -21,18 +21,23 @@ instance Widget Total where
 
 
 mkTotal :: FileFormat -> [NormalParams] -> Window -> Total
-mkTotal f p = Total f (listToZipper p) (toEnum 0)
+mkTotal f p = Total f (listToZipper p) (listToZipper [0])
 
 
 updateTotal :: NominalDiffTime -> Total -> Curses Total
 updateTotal d (Total f c z w) = updateWindow w $ do
-  let nt = Total f c (z + d) w
-      str = show $ splitTime (z + d)
+  let nz = replace (curs z + d) z
+      nt = Total f c nz w
+      str = show $ splitTime (sum $ zipperToList nz)
 
   (rows, columns) <- windowSize
 
   moveCursor 1 (columns - 14)
-  drawString $ show $ percentile (curs c) z
+  drawString $
+    if null $ left z
+      then "----"
+      else show $ percentile (curs $ prev c) (sum $ left z)
+
 
   moveCursor 1 (columns - (fromIntegral $ length str))
   insertString str
@@ -42,9 +47,17 @@ updateTotal d (Total f c z w) = updateWindow w $ do
 
 handleTotal :: TimerAction -> Total -> Curses Total
 handleTotal Reset   (Total f c _ w) = return $ mkTotal f (zipperToList c) w
-handleTotal Advance (Total f c z w) = return $ Total f (next c) z w
-handleTotal Reverse (Total f c z w) = return $ Total f (prev c) z w
-handleTotal Skip    (Total f c z w) = return $ Total f (next $ next c) z w
+handleTotal Advance (Total f c z w) = return $ Total f (next c) (push 0 z) w
+handleTotal Reverse (Total f c z w) =
+  return $
+    if null $ left z
+      then Total f (prev c) z w
+      else
+        let cz = curs z
+            z' = trunc $ prev z
+            nz = replace (curs z' + cz) z'
+        in Total f (prev c) nz w
+handleTotal Skip    (Total f c z w) = return $ Total f (next c) (push 0 z) w
 handleTotal _ t = return t
 
 
@@ -66,11 +79,14 @@ redrawTotal t@(Total f c z w) = updateWindow w $ do
 
   -- Percentile
   moveCursor 1 (columns - 14)
-  insertString $ show $ percentile (curs c) z
+  insertString $
+    if null $ left z
+      then "----"
+      else show $ percentile (curs $ prev c) (sum $ left z)
 
   -- Current cumulative time over all splits
   do
-     let str = show $ splitTime z
+     let str = show $ splitTime $ sum $ zipperToList z
 
      moveCursor 1 (columns - (fromIntegral $ length str))
      insertString str
