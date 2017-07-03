@@ -36,7 +36,9 @@ updateTotal d (Total f c z w) = updateWindow w $ do
   drawString $
     if null $ left z
       then "----"
-      else show $ percentile (curs $ prev c) (sum $ left z)
+      else if null $ right c
+             then show $ percentile (curs c) (sum $ zipperToList z)
+             else show $ percentile (curs $ prev c) (sum $ left z)
 
 
   moveCursor 1 (columns - (fromIntegral $ length str))
@@ -82,7 +84,9 @@ redrawTotal t@(Total f c z w) = updateWindow w $ do
   insertString $
     if null $ left z
       then "----"
-      else show $ percentile (curs $ prev c) (sum $ left z)
+      else if null $ right c
+             then show $ percentile (curs c) (sum $ zipperToList z)
+             else show $ percentile (curs $ prev c) (sum $ left z)
 
   -- Current cumulative time over all splits
   do
