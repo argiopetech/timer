@@ -27,11 +27,11 @@ instance Widget Layout where
 
 
 mkLayout :: Config -> FileFormat -> Curses Layout
-mkLayout (Config levels) file = do
+mkLayout (Config title levels) file = do
   -- Window setup
-  let levelNames      = map name levels
-      levelTimes      = map time levels
-      cumulativeTimes = map cumu levels
+  let levelNames      = map levelName levels
+      levelTimes      = map time      levels
+      cumulativeTimes = map cumu      levels
 
   layout <- L <$> (mkSplits levelNames          <$> defaultWindow)
               <*> (mkPercentile levelTimes      <$> newWindow')
@@ -102,7 +102,7 @@ arrangeLayout (L splits percentiles times total) = do
 
 
 resetLayout :: Config -> FileFormat -> Layout -> Layout
-resetLayout (Config levels) file (L splits percentiles times total) =
+resetLayout (Config title levels) file (L splits percentiles times total) =
   let cumulativeTimes = map cumu levels
   in L splits
        percentiles

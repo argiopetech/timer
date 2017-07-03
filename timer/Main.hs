@@ -24,7 +24,7 @@ main = do
 
 
 doCurses :: Config -> IO ()
-doCurses config@(Config levels) = runCurses $ do
+doCurses config@(Config _ levels) = runCurses $ do
   -- NCurses setup
   setEcho False
   _ <- setCursorMode CursorInvisible
@@ -33,7 +33,7 @@ doCurses config@(Config levels) = runCurses $ do
   startTime <- liftIO getCurrentTime
 
   -- Window setup
-  let levelNames = map name levels
+  let levelNames = map levelName levels
 
   -- Load previous data
   file <- liftIO $ load levelNames
