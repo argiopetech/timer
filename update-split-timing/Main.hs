@@ -44,4 +44,4 @@ main = do
 
       putStrLn $ unlines [ "mu_prior <- " ++ (show $ fst hierarchicalPrior)
                          , "tau_prior <- " ++ (show $ snd hierarchicalPrior) ]
-      B.putStrLn $ encodePretty prettyConfig nConfig
+      B.writeFile "splits.yaml" $ encodePretty prettyConfig nConfig
