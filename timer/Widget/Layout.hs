@@ -10,12 +10,13 @@ import Import
 import File
 import Config
 
+import Widget.Title
 import Widget.Splits
 import Widget.Times
 import Widget.Total
 import Widget.Percentile
 
-data Layout = L Splits Percentile Times Total
+data Layout = L Splits Percentile Times Title Total
 
 instance Widget Layout where
   update = updateLayout
@@ -33,9 +34,10 @@ mkLayout (Config title levels) file = do
       levelTimes      = map time      levels
       cumulativeTimes = map cumu      levels
 
-  layout <- L <$> (mkSplits levelNames          <$> defaultWindow)
+  layout <- L <$> (mkSplits levelNames          <$> newWindow')
               <*> (mkPercentile levelTimes      <$> newWindow')
               <*> (mkTimes file                 <$> newWindow')
+              <*> (mkTitle file title           <$> defaultWindow)
               <*> (mkTotal file cumulativeTimes <$> newWindow')
 
   arrangeLayout layout
@@ -44,28 +46,31 @@ mkLayout (Config title levels) file = do
 
 
 updateLayout :: NominalDiffTime -> Layout -> Curses Layout
-updateLayout d (L s p ti to) =
+updateLayout d (L s p times title to) =
   let f = update d
   in L <$> f s
        <*> f p
-       <*> f ti
+       <*> f times
+       <*> f title
        <*> f to
 
 
 handleLayout :: TimerAction -> Layout -> Curses Layout
-handleLayout ta (L s p ti to) =
+handleLayout ta (L s p times title to) =
   let f = handle ta
   in L <$> f s
        <*> f p
-       <*> f ti
+       <*> f times
+       <*> f title
        <*> f to
 
 
 redrawLayout :: Layout -> Curses ()
-redrawLayout (L s p ti to) = do
+redrawLayout (L s p times title to) = do
   redraw s
   redraw p
-  redraw ti
+  redraw times
+  redraw title
   redraw to
 
 
@@ -74,37 +79,44 @@ newWindow' = newWindow 1 1 0 0
 
 
 arrangeLayout :: Layout -> Curses ()
-arrangeLayout (L splits percentiles times total) = do
+arrangeLayout (L splits percentiles times title total) = do
   (rows, columns) <- screenSize
 
-  let timesColumns      = 10
-      totalsRows        = 4
+  let titleRows  = 2
+      totalsRows = 4
+      splitsRows = rows - (titleRows + totalsRows)
+
+      timesColumns      = 10
       percentileColumns = 5
       splitsColumns     = columns - (timesColumns + percentileColumns)
-      splitsRows        = rows    - totalsRows
 
 
-  move   splits 0 0
+  move   title 0 0
+  resize title titleRows columns
+  redraw title
+
+  move   splits titleRows 0
   resize splits splitsRows splitsColumns
   redraw splits
 
-  move   percentiles 0 splitsColumns
+  move   percentiles titleRows splitsColumns
   resize percentiles splitsRows percentileColumns
   redraw percentiles
 
-  move   times 0 (splitsColumns + percentileColumns)
+  move   times titleRows (splitsColumns + percentileColumns)
   resize times splitsRows timesColumns
   redraw times
 
-  move   total splitsRows 0
+  move   total (titleRows + splitsRows) 0
   resize total totalsRows columns
   redraw total
 
 
 resetLayout :: Config -> FileFormat -> Layout -> Layout
-resetLayout (Config title levels) file (L splits percentiles times total) =
+resetLayout (Config title levels) file (L splits percentiles times titleW total) =
   let cumulativeTimes = map cumu levels
   in L splits
        percentiles
        (mkTimes file $ window times)
+       (mkTitle file title $ window titleW)
        (mkTotal file cumulativeTimes $ window total)

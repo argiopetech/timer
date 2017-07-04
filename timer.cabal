@@ -46,9 +46,11 @@ executable timer
                        Widget.Percentile
                        Widget.Splits
                        Widget.Times
+                       Widget.Title
                        Widget.Total
                        
   build-depends:       base >=4.9
+                     , containers
                      , ncurses
                      , text
                      , time

@@ -56,7 +56,7 @@ doCurses config@(Config _ levels) = runCurses $ do
 
 
 mainLoop :: FileFormat -> Layout -> UTCTime -> Paused -> Curses (FileFormat, Layout, Bool)
-mainLoop file l@(L splits _ times _) lastTime p = do
+mainLoop file l@(L splits _ times _ _) lastTime p = do
   w        <- defaultWindow
   ev       <- getEvent w (Just 60)
   thisTime <- liftIO getCurrentTime
