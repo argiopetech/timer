@@ -96,7 +96,7 @@ recordRun f _  [] = f
 recordRun f [0] _ = f
 recordRun f@(FileFormat ls m rs) times valid =
   let run = mkRun f times valid
-  
+
       -- Sets the run counter to either one past the current max, or zero if there are no runs yet
       key = if null rs
               then 0
