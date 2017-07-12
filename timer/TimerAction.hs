@@ -11,15 +11,17 @@ data TimerAction = Start
                  | Reset
                  | Save FileFormat
                  | Pass
+                 | ValidInvalid
 
 instance Eq TimerAction where
-  (==) Start    Start    = True
-  (==) Pause    Pause    = True
-  (==) End      End      = True
-  (==) Advance  Advance  = True
-  (==) Reverse  Reverse  = True
-  (==) Skip     Skip     = True
-  (==) Reset    Reset    = True
-  (==) (Save _) (Save _) = True
-  (==) Pass     Pass     = True
+  (==) Start        Start    = True
+  (==) Pause        Pause    = True
+  (==) End          End      = True
+  (==) Advance      Advance  = True
+  (==) Reverse      Reverse  = True
+  (==) Skip         Skip     = True
+  (==) Reset        Reset    = True
+  (==) (Save _)     (Save _) = True
+  (==) Pass         Pass     = True
+  (==) ValidInvalid ValidInvalid = True
   (==) _        _        = False

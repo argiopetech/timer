@@ -38,7 +38,7 @@ doCurses config@(Config _ levels) = runCurses $ do
   -- Load previous data
   file <- liftIO $ load levelNames
 
-  -- Build the layout (which also "instantiates" all the widgets
+  -- Build the layout (which also "instantiates" all the widgets)
   layout <- mkLayout config file
 
   -- Start the save/reset wrapper around the main loop
@@ -124,6 +124,9 @@ mainLoop file l@(L splits _ times _ _) lastTime p = do
                 if paused p
                   then return Reset
                   else return Pass
+
+              EventCharacter 'i' ->
+                return ValidInvalid
 
               _ -> return Pass
 

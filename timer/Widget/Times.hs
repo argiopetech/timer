@@ -66,6 +66,8 @@ handleTimes End   (Times f _ z v w) = return $ Times f True z v w
 
 handleTimes Start (Times f _ z v w) = return $ Times f False z v w
 
+handleTimes ValidInvalid (Times f p z v w) = return $ Times f p z (replace (not $ curs v) v) w
+
 handleTimes _ t = return t
 
 redrawTimes :: Times -> Curses ()

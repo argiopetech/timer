@@ -50,6 +50,10 @@ handlePercentile Skip    (Percentile z ts v w) =
   return $ Percentile (next z) (push (toEnum 0) ts) (push False $ replace False v) w
 
 handlePercentile Reset   (Percentile z ts v w) = return $ mkPercentile (zipperToList z) w
+
+handlePercentile ValidInvalid (Percentile z ts v w) =
+  return $ Percentile z ts (replace (not $ curs v) v) w
+
 handlePercentile _ t = return t
 
 redrawPercentile :: Percentile -> Curses ()
