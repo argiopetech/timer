@@ -87,3 +87,11 @@ executable level-bests
                      , timer
   hs-source-dirs:      level-bests
   default-language:    Haskell2010
+
+
+executable total-time
+  main-is:             Main.hs
+  build-depends:       base >=4.9
+                     , timer
+  hs-source-dirs:      total-time
+  default-language:    Haskell2010
