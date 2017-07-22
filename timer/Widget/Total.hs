@@ -9,7 +9,9 @@ import Format.SplitTime
 import Format.Percentile
 
 import Control.Monad (unless)
+import Statistics.Distribution.Normal
 import Text.Printf
+
 
 data Total = Total FileFormat (Zipper NormalParams) (Zipper NominalDiffTime) Window
 
@@ -37,8 +39,8 @@ updateTotal d (Total f c z w) = updateWindow w $ do
     if null $ left z
       then "----"
       else if null $ right c
-             then show $ percentile (curs c) (sum $ zipperToList z)
-             else show $ percentile (curs $ prev c) (sum $ left z)
+             then show $ percentile (mkNormal $ curs c) (sum $ zipperToList z)
+             else show $ percentile (mkNormal $ curs $ prev c) (sum $ left z)
 
 
   moveCursor 1 (columns - (fromIntegral $ length str))
@@ -85,8 +87,8 @@ redrawTotal t@(Total f c z w) = updateWindow w $ do
     if null $ left z
       then "----"
       else if null $ right c
-             then show $ percentile (curs c) (sum $ zipperToList z)
-             else show $ percentile (curs $ prev c) (sum $ left z)
+             then show $ percentile (mkNormal $ curs c) (sum $ zipperToList z)
+             else show $ percentile (mkNormal $ curs $ prev c) (sum $ left z)
 
   -- Current cumulative time over all splits
   do
@@ -97,9 +99,9 @@ redrawTotal t@(Total f c z w) = updateWindow w $ do
 
 
   -- The following are consistent internal to a run
-  let target = if null $ right c
-                 then curs c
-                 else last $ right c
+  let target = mkNormal $ if null $ right c
+                            then curs c
+                            else last $ right c
 
   -- Personal Best
   -- Tag
@@ -150,3 +152,6 @@ redrawTotal t@(Total f c z w) = updateWindow w $ do
 
   moveCursor 1 (columns - 10)
   drawLineV Nothing 3
+
+
+mkNormal = uncurry normalDistr

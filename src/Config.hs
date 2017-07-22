@@ -4,6 +4,7 @@ module Config where
 import Types
 
 import Data.Text
+import Data.Time.Clock
 import Data.Yaml
 import Data.Yaml.Pretty hiding (Config)
 
@@ -19,14 +20,14 @@ instance FromJSON Config where
   parseJSON (Object o) = Config <$> o .: "title" <*> o .: "levels"
 
 data Level = Level { levelName :: Text
-                   , time      :: NormalParams
+                   , time      :: (Double, Double, NominalDiffTime)
                    , cumu      :: NormalParams
                    } deriving (Show)
 
 instance ToJSON Level where
-  toJSON (Level n (tm, tsd) (cm, csd)) = object [ "name"       .= n
-                                                , "time"       .= object ["mean" .= tm, "sigma" .= tsd]
-                                                , "cumulative" .= object ["mean" .= cm, "sigma" .= csd] ]
+  toJSON (Level n (tm, tsd, tb) (cm, csd)) = object [ "name"       .= n
+                                                    , "time"       .= object ["shape" .= tm, "scale" .= tsd, "best" .= tb]
+                                                    , "cumulative" .= object ["mean" .= cm, "sigma" .= csd] ]
 
 instance FromJSON Level where
   parseJSON (Object l) = do
@@ -34,8 +35,9 @@ instance FromJSON Level where
     c <- l .: "cumulative"
 
     Level <$> l .: "name"
-          <*> ((,) <$> t .: "mean"
-                   <*> t .: "sigma")
+          <*> ((,,) <$> t .: "shape"
+                    <*> t .: "scale"
+                    <*> t .: "best")
           <*> ((,) <$> c .: "mean"
                    <*> c .: "sigma")
 
@@ -54,5 +56,14 @@ prettyConfig = setConfCompare go defConfig
 
         go "mean"  "sigma" = LT
         go "sigma" "mean"  = GT
+
+        go "best"  "scale" = LT
+        go "best"  "shape" = LT
+        go "best"  _       = GT
+
+        go "shape" "best"  = GT
+        go "shape" _       = LT
+
+        go "scale" _       = GT
 
         go t1 t2 = compare t1 t2

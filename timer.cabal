@@ -20,6 +20,7 @@ library
                        File
                        Format.Percentile
                        Format.SplitTime
+                       Format.FastTime
                        Types
   build-depends:       base >=4.9
                      , binary
@@ -52,6 +53,7 @@ executable timer
   build-depends:       base >=4.9
                      , containers
                      , ncurses
+                     , statistics
                      , text
                      , time
                      , timer

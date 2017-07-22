@@ -17,8 +17,8 @@ instance Show Percentile where
   showsPrec _ = showPercentile
 
 
-percentile :: (Double, Double) -> NominalDiffTime -> Percentile
-percentile a b = Percentile (uncurry normalDistr a) $ realToFrac b
+percentile :: Distribution d => d -> NominalDiffTime -> Percentile
+percentile d a = Percentile d $ realToFrac a
 
 
 showPercentile :: Percentile -> ShowS

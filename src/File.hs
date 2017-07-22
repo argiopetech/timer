@@ -156,7 +156,7 @@ levelData (FileFormat ls _ rm) =
 
 -- Restricts the output of levelData to only include valid splits.
 onlyValidSplits :: [(Int, [(NominalDiffTime, Bool)])] -> [(Int, [NominalDiffTime])]
-onlyValidSplits ls = map (second (map fst)) ls
+onlyValidSplits ls = map (second (map fst . filter snd)) ls
 
 
 -- Looks at all the valid splits for each level, finds the smallest, and evaluates to the sum of
@@ -203,9 +203,12 @@ playTime (FileFormat _ ls rs) =
 -- Outputs data for all valid splits in a format readable by the `unisplits` STAN model.
 output :: FileFormat -> String
 output (FileFormat _ ls rs) =
-  let levels = map snd $ onlyValidSplits $ levelData $ FileFormat ls ls rs
-      lengths = map length levels
+  let levels          = map snd $ onlyValidSplits $ levelData $ FileFormat ls ls rs
+      scaledByMinimum = map (\ls -> (1.0e-6:) $ filter (> 0) $ map (subtract 1 . (/ (minimum ls))) ls) levels
+      lengths         = map length scaledByMinimum
+
       n     = "N <- " ++ (show $ length lengths)
       num_y = "num_y <- c( " ++ (concat $ intersperse ", " $ map show lengths) ++ " )"
-      y     = "y <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac) $ concat levels) ++ " )"
-  in unlines [n, num_y, y]
+      y     = "y <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac) $ concat scaledByMinimum) ++ " )"
+      mins  = "mins <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac . minimum) levels) ++ " )"
+  in unlines [n, num_y, y, mins]
