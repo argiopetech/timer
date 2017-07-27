@@ -7,6 +7,7 @@ import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Lazy as B
 import qualified Data.IntMap          as IM
 import qualified Data.List            as L
+import qualified Data.Text            as T
 
 import Codec.Compression.GZip
 import Control.Applicative ((<|>))
@@ -35,9 +36,12 @@ type Run = IntMap (NominalDiffTime, Bool)
 tagLength :: Int
 tagLength = 15
 
-v2Tag :: BS.ByteString
-v2Tag = "splitsDatV2.0.0"
+-- The first tagged version
+v200Tag :: BS.ByteString
+v200Tag = "splitsDatV2.0.0"
 
+currentTag :: BS.ByteString
+currentTag = v200Tag
 
 -- The internal data format for loading, saving, and manipulating split data.
 data FileFormat = FileFormat CurrentLevels AllKnownLevels (IntMap Run)
@@ -46,7 +50,7 @@ data FileFormat = FileFormat CurrentLevels AllKnownLevels (IntMap Run)
 instance Binary FileFormat where
   -- Output code always outputs the newest version. We won't support outputting to previous versions
   -- of the data format.
-  put (FileFormat _ t rs) = putByteString v2Tag
+  put (FileFormat _ t rs) = putByteString currentTag
                          >> put t
                          >> put (IM.map (IM.map (first fromEnum)) rs)
   get = do
@@ -63,8 +67,8 @@ instance Binary FileFormat where
     loaded <- lookAheadM $ do
       tag <- getByteString tagLength
 
-      if | tag == v2Tag -> Just <$> v2Loader
-         | otherwise    -> pure Nothing
+      if | tag == v200Tag -> Just <$> v2Loader
+         | otherwise      -> pure Nothing
 
     -- Evaluates to a FileFormat read by the tag code above or tries a backup loader (in left to
     -- right order). If neither loads, `binary` provides an error.
@@ -131,7 +135,7 @@ load' = do
 -- operations (e.g., anything that calls levelData)
 mergeLevelNames :: [Text] -> FileFormat -> FileFormat
 mergeLevelNames levels (FileFormat _ m rs) =
-  let (FileFormat nl nm nrs) = foldr go (FileFormat [] (reverse m) rs) $ reverse levels
+  let (FileFormat nl nm nrs) = foldr go (FileFormat [] (reverse m) rs) $ reverse $ canonicalize levels
   in FileFormat (reverse nl) (reverse nm) nrs
   where go :: Text -> FileFormat -> FileFormat
         go l (FileFormat ls m rs) =
@@ -212,3 +216,18 @@ output (FileFormat _ ls rs) =
       y     = "y <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac) $ concat scaledByMinimum) ++ " )"
       mins  = "mins <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac . minimum) levels) ++ " )"
   in unlines [n, num_y, y, mins]
+
+canonicalize :: [Text] -> [Text]
+canonicalize ss = map snd $ scanl go ([head ss], head ss) $ tail ss
+  where go :: ([Text], Text) -> Text -> ([Text], Text)
+        go (conts, _) s =
+          let l = 2 * length conts
+              prefL = max 0 l - 1
+              prefix = T.pack $ replicate l ' '
+              deeper = (T.drop prefL s) : conts
+              canon  = T.concat $ reverse deeper
+          in if prefix `T.isPrefixOf` s
+               then (deeper, canon)
+               else if null conts
+                      then ([s], s)
+                      else go (tail conts, s) s
