@@ -1,0 +1,13 @@
+dist*
+*.hi
+*.o
+.hsenv*
+.cabal-sandbox
+cabal.sandbox.config
+.DS_Store
+*.swp
+*.a
+*.dyn_hi
+*.dylib
+package.cache
+.stack-work/
