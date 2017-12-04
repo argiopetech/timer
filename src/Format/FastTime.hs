@@ -24,7 +24,7 @@ fastTime = FastTime . realToFrac
 showFastTime :: FastTime -> ShowS
 showFastTime (FastTime p) = showString go
   where go | p <= (-1000) = replicate 4 '\8593'
-           | p >=      0  = replicate 4 '\8595'
+           | p >=      0  = replicate 4 '-'
            | p <=   (-10) = printf "-%3.0f" $ abs p
            | otherwise    = printf "%4.1f" p
 

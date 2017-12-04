@@ -78,6 +78,7 @@ executable output-split-timing
   main-is:             Main.hs
   build-depends:       base >=4.9
                      , timer
+                     , yaml
   hs-source-dirs:      output-split-timing
   default-language:    Haskell2010
 
@@ -87,6 +88,7 @@ executable level-bests
   build-depends:       base >=4.9
                      , text
                      , timer
+                     , yaml
   hs-source-dirs:      level-bests
   default-language:    Haskell2010
 

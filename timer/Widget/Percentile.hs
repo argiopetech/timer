@@ -48,7 +48,7 @@ handlePercentile Reverse p@(Percentile z bs ts v w) =
             ts' = trunc $ prev ts
             v'  = if (not $ curs $ prev $ prev v) && (not $ null $ left $ prev v)
                     then trunc $ prev v
-                    else replace True $ trunc $ prev v
+                   else replace True $ trunc $ prev v
         in Percentile (prev z) (prev bs) (replace (curs ts' + c) ts') v' w
 
 handlePercentile Skip    (Percentile z bs ts v w) =
@@ -91,7 +91,7 @@ redrawPercentile p@(Percentile z bs t v w) = do
         percentileF distr best current =
           if current == 0
             then "----"
-            else if current >= best
+            else if current >= best && best > 0
                    then show $ P.percentile distr $ scaleTime best current
                    else show $ D.fastTime $ current - best
         percentileFs = zipWith3 percentileF distrs bs' t'

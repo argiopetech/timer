@@ -28,7 +28,7 @@ instance FromRecord Line where
 main :: IO ()
 main = do
   -- YAML setup
-  yml <- decodeEither <$> B.readFile "splits.yaml"  
+  yml <- decodeEither <$> B.readFile "splits.yaml"
   csv <- decode HasHeader <$> BS.readFile "summary.csv"
 
   case (,) <$> yml <*> csv of

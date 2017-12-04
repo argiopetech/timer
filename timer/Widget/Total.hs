@@ -8,7 +8,7 @@ import File
 import Format.SplitTime
 import Format.Percentile
 
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Statistics.Distribution.Normal
 import Text.Printf
 
@@ -133,7 +133,10 @@ redrawTotal t@(Total f c z w) = updateWindow w $ do
 
     -- Percentile
     moveCursor 3 (columns - 14)
-    insertString $ ignoreHigh p
+
+    if (sob > 0)
+      then insertString $ ignoreHigh p
+      else insertString "----"
 
     -- Current sum of bests
     moveCursor 3 (columns - (fromIntegral $ length str))

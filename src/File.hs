@@ -22,6 +22,7 @@ import Data.Map      (Map)
 import Data.Maybe
 import Data.Text     (Text)
 import Data.Time.Clock
+import Text.Printf
 
 
 -- Various descriptive type synonyms
@@ -31,6 +32,24 @@ type CurrentLevels  = TagMap
 
 type Run = IntMap (NominalDiffTime, Bool)
 
+
+listRuns :: FileFormat -> IO ()
+listRuns (FileFormat _ levels runMap) =
+  let levelLookup = map (\(a, b) -> (b, a)) levels
+      runs = IM.toAscList runMap
+  in mapM_ (\(key, r) -> do
+               let run = IM.toAscList r
+                   names = map (fromJust . flip lookup levelLookup . fst) run
+                   longestName = maximum $ map T.length names
+                   namedRuns = zip (zip (map fst run) names) $ map snd run
+               putStrLn $ "\nRun #" ++ show key
+               mapM_ (\((n, nt), (time, valid)) -> putStrLn $ (printf "%3d %-*s %s" n longestName nt (show $ splitTime time)) ++ if valid then "" else "(i)") namedRuns
+           ) runs
+
+deleteRun :: FileFormat -> Int -> FileFormat
+deleteRun (FileFormat cl al rs) r = FileFormat cl al $ r `IM.delete` rs
+
+--        putStr $ unlines $ zipWith (\a b -> printf "%-*s" longestName a ++ " - " ++ show (splitTime b)) lNames bests
 
 -- Version tag data
 tagLength :: Int
@@ -86,7 +105,7 @@ mkRun (FileFormat ls _ _) times valid =
   let t' = if length times == length ls -- If we didn't finish the run, don't record the last split
              then times
              else init times
-      r = zip (map snd ls) $ zip t' valid
+      r = filter ((> 0) . fst . snd) $ zip (map snd ls) $ zip t' valid
   in if null r
        then Nothing
        else Just $ IM.fromList r
@@ -180,11 +199,15 @@ sumOfBests f =
 -- Includes runs with invalid splits, as it is assumed the sum of splits in a run is the true total
 -- length of the run, regardless of split validity.
 personalBest :: FileFormat -> NominalDiffTime
-personalBest (FileFormat ls _ rs) =
+personalBest = minimum . completeRuns
+
+
+completeRuns :: FileFormat -> [NominalDiffTime]
+completeRuns (FileFormat ls _ rs) =
   let rs' = filter ((== length ls) . IM.size) $ IM.elems rs
   in if null rs'
-       then toEnum 0
-       else minimum $ map (sum . IM.map fst) rs'
+       then []
+       else map (sum . IM.map fst) rs'
 
 
 -- Reports the shortest valid time for every split
@@ -206,7 +229,7 @@ playTime (FileFormat _ ls rs) =
 
 -- Outputs data for all valid splits in a format readable by the `unisplits` STAN model.
 output :: FileFormat -> String
-output (FileFormat _ ls rs) =
+output f@(FileFormat ls _ rs) =
   let levels          = map snd $ onlyValidSplits $ levelData $ FileFormat ls ls rs
       scaledByMinimum = map (\ls -> (1.0e-6:) $ filter (> 0) $ map (subtract 1 . (/ (minimum ls))) ls) levels
       lengths         = map length scaledByMinimum
@@ -214,15 +237,17 @@ output (FileFormat _ ls rs) =
       n     = "N <- " ++ (show $ length lengths)
       num_y = "num_y <- c( " ++ (concat $ intersperse ", " $ map show lengths) ++ " )"
       y     = "y <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac) $ concat scaledByMinimum) ++ " )"
-      mins  = "mins <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac . minimum) levels) ++ " )"
-  in unlines [n, num_y, y, mins]
+      mins  = "mins <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac . (\a -> if a == toEnum maxBound then 0 else a) . minimum . (toEnum maxBound:)) levels) ++ " )"
+      nFull_runs  = "num_runs <- " ++ (show $ length $ completeRuns f)
+      full_runs = "full_runs <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac) $ completeRuns f) ++ " )"
+  in unlines [n, num_y, y, mins, nFull_runs, full_runs]
 
 canonicalize :: [Text] -> [Text]
 canonicalize ss = map snd $ scanl go ([head ss], head ss) $ tail ss
   where go :: ([Text], Text) -> Text -> ([Text], Text)
         go (conts, _) s =
-          let l = 2 * length conts
-              prefL = max 0 l - 1
+          let l      = 2 * length conts
+              prefL  = max 0 l - 1
               prefix = T.pack $ replicate l ' '
               deeper = (T.drop prefL s) : conts
               canon  = T.concat $ reverse deeper
