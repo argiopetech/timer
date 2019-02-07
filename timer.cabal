@@ -3,19 +3,20 @@
 
 name:                timer
 version:             0.1.0.0
--- synopsis:            
--- description:         
+-- synopsis:
+-- description:
 license:             BSD3
 license-file:        LICENSE
 author:              Elliot Robinson
 maintainer:          elliot.robinson@argiopetech.com
--- copyright:           
+-- copyright:
 category:            Game
 build-type:          Simple
 extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
-library 
+
+library
   exposed-modules:     Config
                        File
                        Format.Percentile
@@ -49,7 +50,7 @@ executable timer
                        Widget.Times
                        Widget.Title
                        Widget.Total
-                       
+
   build-depends:       base >=4.9
                      , containers
                      , ncurses
@@ -60,28 +61,7 @@ executable timer
                      , yaml
   hs-source-dirs:      timer
   default-language:    Haskell2010
-  ghc-options: -Wall                   
-
-
-executable update-split-timing
-  main-is:             Main.hs
-  build-depends:       base >=4.9
-                     , bytestring
-                     , cassava
-                     , text
-                     , timer
-                     , vector
-                     , yaml
-  hs-source-dirs:      update-split-timing
-  default-language:    Haskell2010
-
-executable output-split-timing
-  main-is:             Main.hs
-  build-depends:       base >=4.9
-                     , timer
-                     , yaml
-  hs-source-dirs:      output-split-timing
-  default-language:    Haskell2010
+  ghc-options: -Wall
 
 
 executable level-bests
