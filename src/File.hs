@@ -49,7 +49,6 @@ listRuns (FileFormat _ levels runMap) =
 deleteRun :: FileFormat -> Int -> FileFormat
 deleteRun (FileFormat cl al rs) r = FileFormat cl al $ r `IM.delete` rs
 
---        putStr $ unlines $ zipWith (\a b -> printf "%-*s" longestName a ++ " - " ++ show (splitTime b)) lNames bests
 
 -- Version tag data
 tagLength :: Int
