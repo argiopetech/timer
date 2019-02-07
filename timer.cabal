@@ -60,6 +60,7 @@ executable timer
                      , yaml
   hs-source-dirs:      timer
   default-language:    Haskell2010
+  ghc-options: -Wall                   
 
 
 executable update-split-timing
