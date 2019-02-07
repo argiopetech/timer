@@ -230,21 +230,6 @@ playTime (FileFormat _ ls rs) =
   in sum $ map (sum . map fst . snd) lData
 
 
--- Outputs data for all valid splits in a format readable by the `unisplits` STAN model.
-output :: FileFormat -> String
-output f@(FileFormat ls _ rs) =
-  let levels          = map snd $ onlyValidSplits $ levelData $ FileFormat ls ls rs
-      scaledByMinimum = map (\ls -> (1.0e-6:) $ filter (> 0) $ map (subtract 1 . (/ (minimum ls))) ls) levels
-      lengths         = map length scaledByMinimum
-
-      n     = "N <- " ++ (show $ length lengths)
-      num_y = "num_y <- c( " ++ (concat $ intersperse ", " $ map show lengths) ++ " )"
-      y     = "y <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac) $ concat scaledByMinimum) ++ " )"
-      mins  = "mins <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac . (\a -> if a == toEnum maxBound then 0 else a) . minimum . (toEnum maxBound:)) levels) ++ " )"
-      nFull_runs  = "num_runs <- " ++ (show $ length $ completeRuns f)
-      full_runs = "full_runs <- c( " ++ (concat $ intersperse ", " $ map (show . realToFrac) $ completeRuns f) ++ " )"
-  in unlines [n, num_y, y, mins, nFull_runs, full_runs]
-
 canonicalize :: [Text] -> [Text]
 canonicalize ss = map snd $ scanl go ([head ss], head ss) $ tail ss
   where go :: ([Text], Text) -> Text -> ([Text], Text)
