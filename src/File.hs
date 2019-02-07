@@ -199,7 +199,11 @@ sumOfBests f =
 -- Includes runs with invalid splits, as it is assumed the sum of splits in a run is the true total
 -- length of the run, regardless of split validity.
 personalBest :: FileFormat -> NominalDiffTime
-personalBest = minimum . completeRuns
+personalBest f =
+  let runs = completeRuns f
+  in if null runs
+     then 0
+     else minimum runs
 
 
 completeRuns :: FileFormat -> [NominalDiffTime]
