@@ -11,3 +11,4 @@ cabal.sandbox.config
 *.dylib
 package.cache
 .stack-work/
+splits/
