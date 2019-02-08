@@ -8,12 +8,10 @@ import File
 import Format.SplitTime
 import Format.Percentile
 
-import Control.Monad (unless, when)
-import Statistics.Distribution.Normal
-import Text.Printf
+import Statistics.Distribution.Empirical
 
 
-data Total = Total FileFormat (Zipper NormalParams) (Zipper NominalDiffTime) Window
+data Total = Total FileFormat (Zipper EmpiricalDistribution) (Zipper NominalDiffTime) Window
 
 instance Widget Total where
   update                 = updateTotal
@@ -22,7 +20,7 @@ instance Widget Total where
   window (Total _ _ _ w) = w
 
 
-mkTotal :: FileFormat -> [NormalParams] -> Window -> Total
+mkTotal :: FileFormat -> [EmpiricalDistribution] -> Window -> Total
 mkTotal f p = Total f (listToZipper p) (listToZipper [0])
 
 
@@ -39,8 +37,8 @@ updateTotal d (Total f c z w) = updateWindow w $ do
     if null $ left z
       then "----"
       else if null $ right c
-             then show $ percentile (mkNormal $ curs c) (sum $ zipperToList z)
-             else show $ percentile (mkNormal $ curs $ prev c) (sum $ left z)
+             then show $ percentile (curs c) (sum $ zipperToList z)
+             else show $ percentile (curs $ prev c) (sum $ left z)
 
 
   moveCursor 1 (columns - (fromIntegral $ length str))
@@ -87,8 +85,8 @@ redrawTotal t@(Total f c z w) = updateWindow w $ do
     if null $ left z
       then "----"
       else if null $ right c
-             then show $ percentile (mkNormal $ curs c) (sum $ zipperToList z)
-             else show $ percentile (mkNormal $ curs $ prev c) (sum $ left z)
+             then show $ percentile (curs c) (sum $ zipperToList z)
+             else show $ percentile (curs $ prev c) (sum $ left z)
 
   -- Current cumulative time over all splits
   do
@@ -99,9 +97,9 @@ redrawTotal t@(Total f c z w) = updateWindow w $ do
 
 
   -- The following are consistent internal to a run
-  let target = mkNormal $ if null $ right c
-                            then curs c
-                            else last $ right c
+  let target = if null $ right c
+                 then curs c
+                 else last $ right c
 
   -- Personal Best
   -- Tag
@@ -155,6 +153,3 @@ redrawTotal t@(Total f c z w) = updateWindow w $ do
 
   moveCursor 1 (columns - 10)
   drawLineV Nothing 3
-
-
-mkNormal = uncurry normalDistr

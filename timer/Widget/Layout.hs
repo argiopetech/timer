@@ -34,7 +34,7 @@ mkLayout (Config title levels) file = do
   -- Window setup
   let levelNames      = map levelName levels
       levelBestTimes  = map best      levels
-      cumulativeTimes = map cumu      levels
+      cumulativeTimes = map snd $ cumulativeEmpiricalDistribution file
       levelDistrs     = map snd $ levelEmpiricalDistribution file
       percentileData  = zip levelDistrs levelBestTimes
 
@@ -118,7 +118,7 @@ arrangeLayout (L splits percentiles times title total) = do
 
 resetLayout :: Config -> FileFormat -> Layout -> Layout
 resetLayout (Config title levels) file (L splits percentiles times titleW total) =
-  let cumulativeTimes = map cumu levels
+  let cumulativeTimes = map snd $ cumulativeEmpiricalDistribution file
   in L splits
        percentiles
        (mkTimes file $ window times)
