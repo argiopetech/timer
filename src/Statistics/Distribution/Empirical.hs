@@ -12,8 +12,8 @@ newtype EmpiricalDistribution = EmpiricalDistribution (NominalDiffTime -> Double
 instance Distribution EmpiricalDistribution where
   cumulative (EmpiricalDistribution f) = f . realToFrac
 
-dataToPercentile :: FileFormat -> [(Int, EmpiricalDistribution)]
-dataToPercentile ff =
+levelEmpiricalDistribution :: FileFormat -> [(Int, EmpiricalDistribution)]
+levelEmpiricalDistribution ff =
   let (ls, lData) = unzip $ onlyValidSplits $ levelData ff
       fs = map toF lData
   in zip ls fs

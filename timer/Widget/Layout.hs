@@ -10,7 +10,7 @@ import Import
 import File
 import Config
 
-import Statistics.Distribution.Empirical (dataToPercentile)
+import Statistics.Distribution.Empirical (levelEmpiricalDistribution)
 
 import Widget.Title
 import Widget.Splits
@@ -35,7 +35,7 @@ mkLayout (Config title levels) file = do
   let levelNames      = map levelName levels
       levelBestTimes  = map best      levels
       cumulativeTimes = map cumu      levels
-      levelDistrs     = map snd $ dataToPercentile file
+      levelDistrs     = map snd $ levelEmpiricalDistribution file
       percentileData  = zip levelDistrs levelBestTimes
 
   layout <- L <$> (mkSplits levelNames          <$> newWindow')
