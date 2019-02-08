@@ -21,5 +21,9 @@ main = do
          Left  _ -> load'
 
   let distrs = levelEmpiricalDistribution f
+      l1Data = snd $ head $ onlyValidSplits $ levelData f
+      m      = realToFrac $ minimum l1Data
+      ma     = realToFrac $ maximum l1Data
+      range  = [m, m+0.001..ma]
 
-  print $ cumulative (snd $ head distrs) 52
+  print $ map (cumulative (snd $ head distrs)) range
