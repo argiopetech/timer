@@ -21,23 +21,18 @@ instance FromJSON Config where
 
 data Level = Level { levelName :: Text
                    , best      :: NominalDiffTime
-                   , cumu      :: NormalParams
                    } deriving (Show)
 
 instance ToJSON Level where
-  toJSON (Level n tb (cm, csd)) = object [ "name"       .= n
-                                         , "time"       .= object ["best" .= tb]
-                                         , "cumulative" .= object ["mean" .= cm, "sigma" .= csd] ]
+  toJSON (Level n tb) = object [ "name"       .= n
+                               , "time"       .= object ["best" .= tb]]
 
 instance FromJSON Level where
   parseJSON (Object l) = do
     t <- l .: "time"
-    c <- l .: "cumulative"
 
     Level <$> l .: "name"
           <*> t .: "best"
-          <*> ((,) <$> c .: "mean"
-                   <*> c .: "sigma")
 
 prettyConfig = setConfCompare go defConfig
   where go "title"  "levels" = LT
@@ -47,21 +42,5 @@ prettyConfig = setConfCompare go defConfig
         go "name"   "cumulative" = LT
 
         go "time"   "name"       = GT
-        go "time"   "cumulative" = LT
-
-        go "cumulative" "name" = GT
-        go "cumulative" "time" = GT
-
-        go "mean"  "sigma" = LT
-        go "sigma" "mean"  = GT
-
-        go "best"  "scale" = LT
-        go "best"  "shape" = LT
-        go "best"  _       = GT
-
-        go "shape" "best"  = GT
-        go "shape" _       = LT
-
-        go "scale" _       = GT
 
         go t1 t2 = compare t1 t2
