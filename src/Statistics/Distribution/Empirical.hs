@@ -6,6 +6,8 @@ import Data.List     (sort, partition)
 import Data.Time.Clock
 import Statistics.Distribution (Distribution, cumulative)
 
+import qualified Data.IntMap as IM
+
 
 newtype EmpiricalDistribution = EmpiricalDistribution (NominalDiffTime -> Double)
 
@@ -13,10 +15,15 @@ instance Distribution EmpiricalDistribution where
   cumulative (EmpiricalDistribution f) = f . realToFrac
 
 cumulativeEmpiricalDistribution :: FileFormat -> [(Int, EmpiricalDistribution)]
-cumulativeEmpiricalDistribution ff =
-  let (ls, lData) = unzip $ onlyValidSplits $ levelData ff
-      fs = map toF $ scanl1 (zipWith (+)) lData
-  in zip ls fs
+cumulativeEmpiricalDistribution (FileFormat ls _ runs) =
+  let es = IM.elems runs
+      lData = [ map (sum . map fst)
+                $ filter (\l -> length l == len)
+                $ map ( reverse . dropWhile (not . snd) . reverse
+                        . IM.elems . IM.filterWithKey (\k _ -> (k <= a))) es
+              | (a, len) <- zip (map snd ls) [1..] ]
+      fs = map toF lData
+  in zip (map snd ls) fs
 
 levelEmpiricalDistribution :: FileFormat -> [(Int, EmpiricalDistribution)]
 levelEmpiricalDistribution ff =
