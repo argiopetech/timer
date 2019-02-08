@@ -4,7 +4,6 @@ module Import
 
 import Paused        as Import
 import TimerAction   as Import
-import Types         as Import
 import Widget        as Import
 
 import Util.CursesHelpers as Import
