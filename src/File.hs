@@ -17,7 +17,7 @@ import Data.Binary
 import Data.Binary.Get (lookAheadM, getByteString)
 import Data.Binary.Put (putByteString)
 import Data.IntMap   (IntMap)
-import Data.List     (intersperse, sort)
+import Data.List     (intersperse, sort, partition)
 import Data.Map      (Map)
 import Data.Maybe
 import Data.Text     (Text)
@@ -245,8 +245,32 @@ canonicalize ss = map snd $ scanl go ([head ss], head ss) $ tail ss
                       then ([s], s)
                       else go (tail conts, s) s
 
-dataToPercentile :: FileFormat -> [(Int, [NominalDiffTime])]
+
+newtype EmpiricalDistribution = EmpiricalDistribution (NominalDiffTime -> Double)
+
+
+
+dataToPercentile :: FileFormat -> [(Int, EmpiricalDistribution)]
 dataToPercentile f =
   let (ls, lData) = unzip $ onlyValidSplits $ levelData f
-      slData = map sort lData
-  in zip ls slData
+      fs = map toF lData
+  in zip ls fs
+  where toF :: [NominalDiffTime] -> EmpiricalDistribution
+        toF ls =
+          let slData = sort ls
+              tLen   = fromIntegral $ length slData
+              f = \t -> let p = partition (<= t) slData
+                        in case p of
+                             ([], []) -> 0.0
+                             ([], _ ) -> 0.0
+                             (_,  []) -> 1.0
+                             (l,  m ) ->
+                               let lBound = last l
+                                   uBound = head m
+                                   tFrac  = realToFrac (t - lBound) / realToFrac (uBound - lBound)
+                                   lLen   = fromIntegral $ length l
+                                   lPctl  = lLen / tLen
+                                   uPctl  = (lLen + 1) / tLen
+                                   delta  = uPctl - lPctl
+                               in lPctl + tFrac * delta
+          in EmpiricalDistribution f
