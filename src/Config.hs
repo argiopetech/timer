@@ -1,12 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Config where
 
-import Types
-
 import Data.Text
 import Data.Time.Clock
 import Data.Yaml
-import Data.Yaml.Pretty hiding (Config)
 
 
 data Config = Config Text [Level]
