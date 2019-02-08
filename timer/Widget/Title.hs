@@ -57,7 +57,6 @@ redrawTitle (Title title runs w) = updateWindow w $ do
   -- These will break if the layout is updated. This may be worthy of change in future
   moveCursor 1 (columns - 10)
   drawGlyph glyphTeeT
-  
+
   moveCursor 1 (columns - 15)
   drawGlyph glyphPlus
-

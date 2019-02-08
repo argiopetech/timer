@@ -17,7 +17,7 @@ import Data.Binary
 import Data.Binary.Get (lookAheadM, getByteString)
 import Data.Binary.Put (putByteString)
 import Data.IntMap   (IntMap)
-import Data.List     (intersperse)
+import Data.List     (intersperse, sort)
 import Data.Map      (Map)
 import Data.Maybe
 import Data.Text     (Text)
@@ -244,3 +244,9 @@ canonicalize ss = map snd $ scanl go ([head ss], head ss) $ tail ss
                else if null conts
                       then ([s], s)
                       else go (tail conts, s) s
+
+dataToPercentile :: FileFormat -> [(Int, [NominalDiffTime])]
+dataToPercentile f =
+  let (ls, lData) = unzip $ onlyValidSplits $ levelData f
+      slData = map sort lData
+  in zip ls slData
