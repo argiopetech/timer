@@ -35,7 +35,7 @@ instance FromJSON Level where
     c <- l .: "cumulative"
 
     Level <$> l .: "name"
-          <*> (t .: "best")
+          <*> t .: "best"
           <*> ((,) <$> c .: "mean"
                    <*> c .: "sigma")
 
