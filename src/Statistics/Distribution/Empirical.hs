@@ -13,26 +13,30 @@ instance Distribution EmpiricalDistribution where
   cumulative (EmpiricalDistribution f) = f . realToFrac
 
 dataToPercentile :: FileFormat -> [(Int, EmpiricalDistribution)]
-dataToPercentile f =
-  let (ls, lData) = unzip $ onlyValidSplits $ levelData f
+dataToPercentile ff =
+  let (ls, lData) = unzip $ onlyValidSplits $ levelData ff
       fs = map toF lData
   in zip ls fs
   where toF :: [NominalDiffTime] -> EmpiricalDistribution
         toF ls =
           let slData = sort ls
               tLen   = fromIntegral $ length slData
-              f = \t -> let p = partition (<= t) slData
-                        in case p of
+              f = \t -> let (lp, gp) = partition (<= t) slData
+                        in case (reverse lp, gp) of
                              ([], []) -> 0.0
                              ([], _ ) -> 0.0
                              (_,  []) -> 1.0
-                             (l,  m ) ->
-                               let lBound = last l
-                                   uBound = head m
-                                   tFrac  = realToFrac (t - lBound) / realToFrac (uBound - lBound)
-                                   lLen   = fromIntegral $ length l
-                                   lPctl  = lLen / tLen
-                                   uPctl  = (lLen + 1) / tLen
-                                   delta  = uPctl - lPctl
-                               in lPctl + tFrac * delta
+                             (l:_,  m:_ ) ->
+                               let lLen = fromIntegral $ length lp
+                               in linearInterpolate (l, m) (lLen / tLen, (lLen + 1) / tLen) t
+
           in EmpiricalDistribution f
+
+        linearInterpolate :: (NominalDiffTime, NominalDiffTime) -> (Double, Double) -> NominalDiffTime -> Double
+        linearInterpolate domain (lRange, uRange) domainVal =
+          let m    = mu domain domainVal
+              notM = 1 - m
+          in lRange * notM + uRange * m
+
+        mu :: RealFrac a => (a, a) -> a -> Double
+        mu (lDomain, uDomain) domainVal = realToFrac (domainVal - lDomain) / realToFrac (uDomain - lDomain)
