@@ -17,11 +17,11 @@ import Data.Binary
 import Data.Binary.Get (lookAheadM, getByteString)
 import Data.Binary.Put (putByteString)
 import Data.IntMap   (IntMap)
-import Data.List     (intersperse, sort, partition)
-import Data.Map      (Map)
+import Data.List     (sort, partition)
 import Data.Maybe
 import Data.Text     (Text)
 import Data.Time.Clock
+import Statistics.Distribution (Distribution, cumulative)
 import Text.Printf
 
 
@@ -248,7 +248,8 @@ canonicalize ss = map snd $ scanl go ([head ss], head ss) $ tail ss
 
 newtype EmpiricalDistribution = EmpiricalDistribution (NominalDiffTime -> Double)
 
-
+instance Distribution EmpiricalDistribution where
+  cumulative (EmpiricalDistribution f) = f . realToFrac
 
 dataToPercentile :: FileFormat -> [(Int, EmpiricalDistribution)]
 dataToPercentile f =
