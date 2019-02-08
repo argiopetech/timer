@@ -10,7 +10,7 @@ import Import
 import File
 import Config
 
-import Statistics.Distribution.Empirical (levelEmpiricalDistribution)
+import Statistics.Distribution.Empirical (levelEmpiricalDistribution, cumulativeEmpiricalDistribution)
 
 import Widget.Title
 import Widget.Splits
