@@ -10,6 +10,8 @@ import Statistics.Distribution.Empirical
 import Control.Monad.IO.Class (liftIO)
 import Data.Yaml
 
+import Text.Printf
+
 
 main :: IO ()
 main = do
@@ -24,6 +26,7 @@ main = do
       l1Data = snd $ head $ onlyValidSplits $ levelData f
       m      = realToFrac $ minimum l1Data
       ma     = realToFrac $ maximum l1Data
-      range  = [m, m+0.001..ma]
+      domain = [m, m+0.001..ma]
+      range  = map (cumulative (snd $ head distrs)) domain
 
-  print $ map (cumulative (snd $ head distrs)) range
+  mapM_ putStrLn $ map (uncurry $ printf "%f %f") $ zip domain range
