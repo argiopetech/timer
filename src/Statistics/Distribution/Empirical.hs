@@ -41,6 +41,11 @@ toF ls =
                      ([], []) -> 0.0
                      ([], _ ) -> 0.0
                      (_,  []) -> 1.0
+                     (y1:y0:_, y2:y3:_) ->
+                       let m = mu (y1, y2) t
+                           lLen = fromIntegral $ length lp
+                           p = \o -> (lLen + o) / tLen
+                       in hermiteInterpolate (p (-1), p 0, p 1, p 2) m
                      (l:_,  m:_ ) ->
                        let lLen = fromIntegral $ length lp
                        in linearInterpolate (l, m) (lLen / tLen, (lLen + 1) / tLen) t
@@ -55,3 +60,12 @@ toF ls =
 
     mu :: RealFrac a => (a, a) -> a -> Double
     mu (lDomain, uDomain) domainVal = realToFrac (domainVal - lDomain) / realToFrac (uDomain - lDomain)
+
+    hermiteInterpolate :: (Double, Double, Double, Double) -> Double -> Double
+    hermiteInterpolate (y0, y1, y2, y3) m =
+      let m2 = m * m
+          a0 = (-0.5) * y0 + 1.5 * y1 - 1.5 * y2 + 0.5 * y3
+          a1 = y0 - 2.5 * y1 + 2 * y2 - 0.5 * y3
+          a2 = (-0.5) * y0 + 0.5 * y2
+          a3 = y1
+      in a0 * m * m2 + a1 * m2 + a2 * m + a3
