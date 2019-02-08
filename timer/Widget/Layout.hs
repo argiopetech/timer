@@ -116,10 +116,13 @@ arrangeLayout (L splits percentiles times title total) = do
 
 
 resetLayout :: Config -> FileFormat -> Layout -> Layout
-resetLayout (Config title levels) file (L splits percentiles times titleW total) =
-  let cumulativeTimes = map snd $ cumulativeEmpiricalDistribution file
-  in L splits
-       percentiles
+resetLayout (Config title levelNames) file (L splits percentiles times titleW total) =
+  let levelBestTimes  = map snd $ levelBests file
+      cumulativeTimes = map snd $ cumulativeEmpiricalDistribution file
+      levelDistrs     = map snd $ levelEmpiricalDistribution file
+      percentileData  = zip levelDistrs levelBestTimes
+  in L (mkSplits levelNames $ window splits)
+       (mkPercentile percentileData $ window percentiles)
        (mkTimes file $ window times)
        (mkTitle file title $ window titleW)
        (mkTotal file cumulativeTimes $ window total)
