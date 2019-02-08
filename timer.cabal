@@ -77,10 +77,11 @@ executable level-bests
 executable distr-test
   main-is:             Main.hs
   build-depends:       base >=4.9
+                     , statistics
                      , text
                      , timer
                      , yaml
-  hs-source-dirs:      level-bests
+  hs-source-dirs:      distr-test
   default-language:    Haskell2010
 
 
