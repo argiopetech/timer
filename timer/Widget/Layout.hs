@@ -30,10 +30,9 @@ instance Widget Layout where
 
 
 mkLayout :: Config -> FileFormat -> Curses Layout
-mkLayout (Config title levels) file = do
+mkLayout (Config title levelNames) file = do
   -- Window setup
-  let levelNames      = map levelName levels
-      levelBestTimes  = map best      levels
+  let levelBestTimes  = map snd $ levelBests file
       cumulativeTimes = map snd $ cumulativeEmpiricalDistribution file
       levelDistrs     = map snd $ levelEmpiricalDistribution file
       percentileData  = zip levelDistrs levelBestTimes

@@ -16,7 +16,7 @@ main = do
   yml <- liftIO $ decodeFileEither "splits.yaml"
 
   f@(FileFormat a _ c) <- case yml of
-                            Right (Config _ levels) -> load $ map levelName levels
+                            Right (Config _ levels) -> load levels
                             Left  _ -> load'
 
   let lNames = map fst a
