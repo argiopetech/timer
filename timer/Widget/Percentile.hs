@@ -8,9 +8,9 @@ import qualified Format.Percentile as P
 import qualified Format.FastTime   as D
 
 import Control.Monad (when)
-import Statistics.Distribution.Gamma
+import Statistics.Distribution.Empirical
 
-data Percentile = Percentile (Zipper NormalParams) (Zipper NominalDiffTime) (Zipper NominalDiffTime) (Zipper Bool) Window
+data Percentile = Percentile (Zipper EmpiricalDistribution) (Zipper NominalDiffTime) (Zipper NominalDiffTime) (Zipper Bool) Window
 
 instance Widget Percentile where
   update                        = updatePercentile
@@ -19,9 +19,9 @@ instance Widget Percentile where
   window (Percentile _ _ _ _ w) = w
 
 
-mkPercentile :: [(Double, Double, NominalDiffTime)] -> Window -> Percentile
-mkPercentile p = Percentile (listToZipper $ map (\(a, b, _) -> (a, b)) p)
-                            (listToZipper $ map (\(_, _, c) -> c) p)
+mkPercentile :: [(EmpiricalDistribution, NominalDiffTime)] -> Window -> Percentile
+mkPercentile p = Percentile (listToZipper $ map (\(ed, _) -> ed) p)
+                            (listToZipper $ map (\(_, c) -> c) p)
                             (listToZipper [toEnum 0])
                             (listToZipper [True])
 
@@ -53,7 +53,7 @@ handlePercentile Skip    (Percentile z bs ts v w) =
   return $ Percentile (next z) (next bs) (push (toEnum 0) ts) (push False $ replace False v) w
 
 handlePercentile Reset   (Percentile z bs ts v w) =
-  return $ mkPercentile (zipWith (\(a, b) c -> (a, b, c)) (zipperToList z) (zipperToList bs)) w
+  return $ mkPercentile (zipWith (\ed c -> (ed, c)) (zipperToList z) (zipperToList bs)) w
 
 handlePercentile ValidInvalid (Percentile z bs ts v w) =
   return $ Percentile z bs ts (replace (not $ curs v) v) w
@@ -80,17 +80,13 @@ redrawPercentile p@(Percentile z bs t v w) = do
         t'  = (lt ++ ct:rt)
         bs' = (lb ++ cb:rb)
         v'  = (lv ++ cv:rv)
-        z'  = (lz ++ cz:rz)
-
-        distrs = map (uncurry gammaDistr) z'
-
-        scaleTime best current = (current / best) - 1
+        distrs = (lz ++ cz:rz)
 
         percentileF distr best current =
           if current == 0
             then "----"
             else if current >= best && best > 0
-                   then show $ P.percentile distr $ scaleTime best current
+                   then show $ P.percentile distr current
                    else show $ D.fastTime $ current - best
         percentileFs = zipWith3 percentileF distrs bs' t'
 

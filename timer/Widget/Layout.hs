@@ -10,6 +10,8 @@ import Import
 import File
 import Config
 
+import Statistics.Distribution.Empirical (dataToPercentile)
+
 import Widget.Title
 import Widget.Splits
 import Widget.Times
@@ -31,11 +33,13 @@ mkLayout :: Config -> FileFormat -> Curses Layout
 mkLayout (Config title levels) file = do
   -- Window setup
   let levelNames      = map levelName levels
-      levelTimes      = map time      levels
+      levelBestTimes  = map best      levels
       cumulativeTimes = map cumu      levels
+      levelDistrs     = map snd $ dataToPercentile file
+      percentileData  = zip levelDistrs levelBestTimes
 
   layout <- L <$> (mkSplits levelNames          <$> newWindow')
-              <*> (mkPercentile levelTimes      <$> newWindow')
+              <*> (mkPercentile percentileData  <$> newWindow')
               <*> (mkTimes file                 <$> newWindow')
               <*> (mkTitle file title           <$> defaultWindow)
               <*> (mkTotal file cumulativeTimes <$> newWindow')

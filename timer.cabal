@@ -23,6 +23,7 @@ library
                        Format.SplitTime
                        Format.FastTime
                        Types
+                       Statistics.Distribution.Empirical
   build-depends:       base >=4.9
                      , binary
                      , bytestring

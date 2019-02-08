@@ -20,14 +20,14 @@ instance FromJSON Config where
   parseJSON (Object o) = Config <$> o .: "title" <*> o .: "levels"
 
 data Level = Level { levelName :: Text
-                   , time      :: (Double, Double, NominalDiffTime)
+                   , best      :: NominalDiffTime
                    , cumu      :: NormalParams
                    } deriving (Show)
 
 instance ToJSON Level where
-  toJSON (Level n (tm, tsd, tb) (cm, csd)) = object [ "name"       .= n
-                                                    , "time"       .= object ["shape" .= tm, "scale" .= tsd, "best" .= tb]
-                                                    , "cumulative" .= object ["mean" .= cm, "sigma" .= csd] ]
+  toJSON (Level n tb (cm, csd)) = object [ "name"       .= n
+                                         , "time"       .= object ["best" .= tb]
+                                         , "cumulative" .= object ["mean" .= cm, "sigma" .= csd] ]
 
 instance FromJSON Level where
   parseJSON (Object l) = do
@@ -35,9 +35,7 @@ instance FromJSON Level where
     c <- l .: "cumulative"
 
     Level <$> l .: "name"
-          <*> ((,,) <$> t .: "shape"
-                    <*> t .: "scale"
-                    <*> t .: "best")
+          <*> (t .: "best")
           <*> ((,) <$> c .: "mean"
                    <*> c .: "sigma")
 

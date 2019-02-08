@@ -1,4 +1,4 @@
-module Statistics.Distribution.EmpiricalDistribution where
+module Statistics.Distribution.Empirical where
 
 import File
 
