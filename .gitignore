@@ -1,14 +1,46 @@
-dist*
-*.hi
+# Object files
 *.o
-.hsenv*
-.cabal-sandbox
-cabal.sandbox.config
-.DS_Store
-*.swp
+
+# Libraries
+*.lib
 *.a
-*.dyn_hi
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
 *.dylib
-package.cache
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Temporary files
+\#*
+.\#*
+*~
+*_flymake.cpp
+
+# Merge conflicts
+*.orig
+
+# CMake build artifacts
+BUILD/*
+contrib/BUILD/*
+
+# Stack build artifacts
 .stack-work/
+*.cabal  # YOU MUST USE package.yaml FOR THIS TO WORK
+
+# Testing artifacts
+.hspec-failures
+
+# Utilities
+!.keep
+
+# Misc
+.dir-locals.el
+
+# Local
 splits/
