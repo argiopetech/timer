@@ -29,8 +29,8 @@ mkPercentile p = Percentile (listToZipper $ map (\(a, b, _) -> (a, b)) p)
 
 
 updatePercentile :: NominalDiffTime -> Percentile -> Curses Percentile
-updatePercentile d (Percentile z bs ts v w) =
-  let ts' = replace (curs ts + d) ts
+updatePercentile deltaT (Percentile z bs ts v w) =
+  let ts' = replace (curs ts + deltaT) ts
       p   = Percentile z bs ts' v w
   in redrawPercentile p >> return p
 
