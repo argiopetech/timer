@@ -4,13 +4,11 @@ module Widget.Percentile
   ) where
 
 import Import
-import Format.SplitTime
 import qualified Format.Percentile as P
 import qualified Format.FastTime   as D
 
 import Control.Monad (when)
 import Statistics.Distribution.Gamma
-import Text.Printf
 
 data Percentile = Percentile (Zipper NormalParams) (Zipper NominalDiffTime) (Zipper NominalDiffTime) (Zipper Bool) Window
 
