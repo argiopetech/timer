@@ -33,14 +33,3 @@ instance FromJSON Level where
 
     Level <$> l .: "name"
           <*> t .: "best"
-
-prettyConfig = setConfCompare go defConfig
-  where go "title"  "levels" = LT
-        go "levels" "title"  = GT
-
-        go "name"   "time"       = LT
-        go "name"   "cumulative" = LT
-
-        go "time"   "name"       = GT
-
-        go t1 t2 = compare t1 t2
